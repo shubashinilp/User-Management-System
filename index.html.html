@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UserVault — Administration System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;0,900;1,300&family=Outfit:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e28;
+    --border: #252a38;
+    --accent: #6ee7b7;
+    --accent2: #818cf8;
+    --accent3: #fb923c;
+    --danger: #f87171;
+    --warning: #fbbf24;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+    --radius: 10px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  /* PROFILE THEMES */
+  body.theme-ocean { --accent: #38bdf8; --accent2: #6ee7b7; --bg: #0a0f1a; --surface: #101828; }
+  body.theme-fire  { --accent: #fb923c; --accent2: #f43f5e; --bg: #140a08; --surface: #1e1210; }
+  body.theme-royal { --accent: #a78bfa; --accent2: #ec4899; --bg: #0e0b1a; --surface: #16122a; }
+  body.theme-mono  { --accent: #d1d5db; --accent2: #9ca3af; --bg: #0a0a0a; --surface: #141414; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); }
+
+  /* ---- SCREEN SYSTEM ---- */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; }
+
+  /* ======== LOGIN SCREEN ======== */
+  #loginScreen {
+    align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 30% 20%, rgba(110,231,183,0.07) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(129,140,248,0.07) 0%, transparent 60%), var(--bg);
+  }
+  .login-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 48px;
+    width: 420px;
+    box-shadow: var(--shadow), 0 0 60px rgba(110,231,183,0.04);
+    animation: slideUp 0.5s ease;
+  }
+  @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+  .login-logo { font-family:'Fraunces',serif; font-size:2rem; font-weight:900; color:var(--accent); letter-spacing:-1px; margin-bottom:4px; }
+  .login-sub { color:var(--text-muted); font-size:0.8rem; margin-bottom:32px; font-family:'DM Mono',monospace; }
+  .form-group { margin-bottom:20px; }
+  label { display:block; font-size:0.78rem; color:var(--text-dim); margin-bottom:6px; font-weight:500; letter-spacing:0.5px; text-transform:uppercase; }
+  input[type=text], input[type=password], input[type=email], select, textarea {
+    width:100%; padding:11px 14px; background:var(--surface2); border:1px solid var(--border);
+    border-radius:var(--radius); color:var(--text); font-family:'Outfit',sans-serif; font-size:0.9rem;
+    outline:none; transition:border-color 0.2s, box-shadow 0.2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(110,231,183,0.1); }
+  .btn {
+    padding:11px 22px; border:none; border-radius:var(--radius); cursor:pointer;
+    font-family:'Outfit',sans-serif; font-size:0.9rem; font-weight:600; transition:all 0.2s; letter-spacing:0.3px;
+  }
+  .btn-primary { background:var(--accent); color:#0d0f14; }
+  .btn-primary:hover { filter:brightness(1.1); transform:translateY(-1px); }
+  .btn-secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+  .btn-secondary:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-danger { background:var(--danger); color:#fff; }
+  .btn-danger:hover { filter:brightness(1.1); }
+  .btn-block { width:100%; }
+  .btn-sm { padding:6px 14px; font-size:0.8rem; }
+
+  /* CAPTCHA */
+  .captcha-box {
+    background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius);
+    padding:14px; display:flex; align-items:center; gap:14px; margin-bottom:20px;
+  }
+  .captcha-display {
+    font-family:'DM Mono',monospace; font-size:1.4rem; letter-spacing:6px;
+    color:var(--accent); user-select:none; filter:blur(0.4px);
+    background:repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(110,231,183,0.03) 2px, rgba(110,231,183,0.03) 4px);
+    padding:6px 10px; border-radius:6px; border:1px dashed var(--border);
+    flex:1; text-align:center; font-weight:500;
+  }
+  .captcha-refresh { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.1rem; transition:color 0.2s; }
+  .captcha-refresh:hover { color:var(--accent); }
+  .link-btn { background:none; border:none; color:var(--accent); cursor:pointer; font-size:0.85rem; text-decoration:underline; padding:0; }
+  .alert { padding:10px 14px; border-radius:8px; font-size:0.85rem; margin-bottom:16px; animation:slideUp 0.3s ease; }
+  .alert-error { background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); color:var(--danger); }
+  .alert-success { background:rgba(110,231,183,0.1); border:1px solid rgba(110,231,183,0.3); color:var(--accent); }
+  .alert-info { background:rgba(129,140,248,0.1); border:1px solid rgba(129,140,248,0.3); color:var(--accent2); }
+
+  /* ======== MAIN APP ======== */
+  #appScreen { flex-direction:column; }
+  .topbar {
+    background:var(--surface); border-bottom:1px solid var(--border);
+    padding:0 24px; height:58px; display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:100;
+  }
+  .topbar-brand { font-family:'Fraunces',serif; font-size:1.3rem; font-weight:900; color:var(--accent); }
+  .topbar-right { display:flex; align-items:center; gap:16px; }
+  .user-badge {
+    display:flex; align-items:center; gap:10px; padding:6px 12px;
+    background:var(--surface2); border:1px solid var(--border); border-radius:50px;
+  }
+  .avatar {
+    width:30px; height:30px; border-radius:50%; background:var(--accent);
+    color:#0d0f14; font-weight:700; font-size:0.75rem; display:flex; align-items:center; justify-content:center;
+  }
+  .user-name-display { font-size:0.85rem; font-weight:500; }
+  .role-tag {
+    font-size:0.7rem; font-family:'DM Mono',monospace; padding:2px 8px;
+    border-radius:4px; font-weight:500;
+  }
+  .role-admin { background:rgba(251,146,60,0.15); color:var(--accent3); }
+  .role-manager { background:rgba(129,140,248,0.15); color:var(--accent2); }
+  .role-viewer { background:rgba(110,231,183,0.15); color:var(--accent); }
+  .role-editor { background:rgba(251,191,36,0.15); color:var(--warning); }
+
+  .app-body { display:flex; flex:1; overflow:hidden; height:calc(100vh - 58px); }
+  .sidebar {
+    width:220px; background:var(--surface); border-right:1px solid var(--border);
+    padding:20px 0; display:flex; flex-direction:column; overflow-y:auto;
+  }
+  .sidebar-section { margin-bottom:24px; }
+  .sidebar-label { font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; padding:0 18px; margin-bottom:8px; font-family:'DM Mono',monospace; }
+  .nav-item {
+    display:flex; align-items:center; gap:10px; padding:9px 18px;
+    color:var(--text-dim); cursor:pointer; font-size:0.88rem; border-left:3px solid transparent;
+    transition:all 0.15s; user-select:none;
+  }
+  .nav-item:hover { color:var(--text); background:var(--surface2); }
+  .nav-item.active { color:var(--accent); border-left-color:var(--accent); background:rgba(110,231,183,0.05); font-weight:600; }
+  .nav-icon { font-size:1rem; width:18px; text-align:center; }
+
+  .main-content { flex:1; overflow-y:auto; padding:28px 32px; }
+  .page { display:none; }
+  .page.active { display:block; animation:slideUp 0.3s ease; }
+
+  .page-header { margin-bottom:24px; }
+  .page-title { font-family:'Fraunces',serif; font-size:1.7rem; font-weight:600; color:var(--text); }
+  .page-desc { color:var(--text-muted); font-size:0.85rem; margin-top:4px; }
+
+  /* CARDS & PANELS */
+  .card {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;
+  }
+  .card-title { font-size:0.85rem; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:16px; font-family:'DM Mono',monospace; }
+
+  /* STATS GRID */
+  .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .stat-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:20px 22px; position:relative; overflow:hidden;
+  }
+  .stat-card::after {
+    content:''; position:absolute; bottom:0; left:0; right:0; height:3px;
+    background:var(--accent); border-radius:0 0 14px 14px; opacity:0.6;
+  }
+  .stat-card:nth-child(2)::after { background:var(--accent2); }
+  .stat-card:nth-child(3)::after { background:var(--accent3); }
+  .stat-card:nth-child(4)::after { background:var(--warning); }
+  .stat-num { font-family:'Fraunces',serif; font-size:2rem; font-weight:900; color:var(--text); }
+  .stat-label { font-size:0.78rem; color:var(--text-muted); margin-top:4px; }
+  .stat-icon { position:absolute; top:18px; right:18px; font-size:1.6rem; opacity:0.15; }
+
+  /* TABLE */
+  .table-wrap { overflow-x:auto; border-radius:12px; border:1px solid var(--border); }
+  table { width:100%; border-collapse:collapse; font-size:0.875rem; }
+  thead tr { background:var(--surface2); }
+  th { padding:12px 16px; text-align:left; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); font-family:'DM Mono',monospace; font-weight:500; border-bottom:1px solid var(--border); }
+  td { padding:12px 16px; border-bottom:1px solid var(--border); color:var(--text-dim); }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:rgba(255,255,255,0.02); }
+  .status-badge {
+    display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:600; font-family:'DM Mono',monospace;
+  }
+  .status-active { background:rgba(110,231,183,0.12); color:var(--accent); }
+  .status-inactive { background:rgba(248,113,113,0.12); color:var(--danger); }
+  .status-pending { background:rgba(251,191,36,0.12); color:var(--warning); }
+
+  /* MODAL */
+  .modal-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000;
+    align-items:center; justify-content:center; backdrop-filter:blur(4px);
+  }
+  .modal-overlay.open { display:flex; animation:fadeIn 0.2s ease; }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .modal {
+    background:var(--surface); border:1px solid var(--border); border-radius:18px;
+    padding:32px; width:520px; max-width:95vw; max-height:90vh; overflow-y:auto;
+    box-shadow:var(--shadow); animation:slideUp 0.3s ease;
+  }
+  .modal-title { font-family:'Fraunces',serif; font-size:1.4rem; font-weight:600; margin-bottom:6px; }
+  .modal-sub { color:var(--text-muted); font-size:0.82rem; margin-bottom:24px; }
+  .modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:24px; padding-top:20px; border-top:1px solid var(--border); }
+
+  /* GRID FORM */
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .form-grid .span2 { grid-column:span 2; }
+
+  /* PASSWORD STRENGTH */
+  .strength-meter { height:4px; border-radius:2px; margin-top:8px; background:var(--border); overflow:hidden; }
+  .strength-bar { height:100%; border-radius:2px; transition:width 0.3s, background 0.3s; width:0; }
+  .strength-label { font-size:0.72rem; color:var(--text-muted); margin-top:4px; font-family:'DM Mono',monospace; }
+
+  /* SEARCH & FILTER */
+  .toolbar { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .search-input { flex:1; max-width:300px; }
+  .search-wrap { position:relative; }
+  .search-wrap input { padding-left:36px; }
+  .search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.9rem; }
+
+  /* PROFILE THEMES PANEL */
+  .theme-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .theme-opt {
+    border:2px solid var(--border); border-radius:10px; padding:16px 12px; cursor:pointer;
+    text-align:center; transition:all 0.2s; font-size:0.8rem;
+  }
+  .theme-opt:hover { border-color:var(--accent); }
+  .theme-opt.selected { border-color:var(--accent); background:rgba(110,231,183,0.06); }
+  .theme-swatch { height:24px; border-radius:6px; margin-bottom:8px; }
+
+  /* ROLE BUILDER */
+  .perm-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
+  .perm-item { display:flex; align-items:center; gap:8px; font-size:0.82rem; cursor:pointer; }
+  .perm-item input[type=checkbox] { accent-color:var(--accent); width:15px; height:15px; }
+
+  /* FIRST LOGIN STEPS */
+  .steps-bar { display:flex; gap:0; margin-bottom:32px; }
+  .step-dot {
+    flex:1; height:4px; background:var(--border); border-radius:2px; transition:background 0.3s;
+    margin-right:4px;
+  }
+  .step-dot.done { background:var(--accent); }
+  .step-dot.active { background:var(--accent2); }
+  .step-title { font-family:'Fraunces',serif; font-size:1.5rem; margin-bottom:6px; }
+
+  /* SCROLL */
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+  /* RESPONSIVE */
+  @media(max-width:768px) {
+    .stats-grid { grid-template-columns:1fr 1fr; }
+    .form-grid { grid-template-columns:1fr; }
+    .form-grid .span2 { grid-column:span 1; }
+    .sidebar { display:none; }
+    .theme-grid { grid-template-columns:1fr 1fr; }
+    .perm-grid { grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN SCREEN ===================== -->
+<div class="screen active" id="loginScreen">
+  <div class="login-box" id="loginBox">
+    <div class="login-logo">UserVault</div>
+    <div class="login-sub">// secure administration system</div>
+    <div id="loginAlert"></div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="Enter username" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="Enter password">
+    </div>
+    <div class="captcha-box">
+      <div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:6px;font-family:'DM Mono',monospace;">CAPTCHA VERIFICATION</div>
+        <div class="captcha-display" id="captchaDisplay"></div>
+      </div>
+      <button class="captcha-refresh" onclick="generateCaptcha()" title="Refresh">↻</button>
+    </div>
+    <div class="form-group">
+      <label>Enter Captcha</label>
+      <input type="text" id="captchaInput" placeholder="Type the characters above">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="doLogin()">Sign In →</button>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="link-btn" onclick="showForgotPassword()">Forgot password?</button>
+    </div>
+  </div>
+
+  <!-- FORGOT PASSWORD -->
+  <div class="login-box" id="forgotBox" style="display:none;">
+    <div class="login-logo">UserVault</div>
+    <div class="login-sub">// password recovery</div>
+    <div id="forgotAlert"></div>
+    <div id="forgotStep1">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="forgotUser" placeholder="Enter your username">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="forgotStep1()">Continue →</button>
+    </div>
+    <div id="forgotStep2" style="display:none;">
+      <div class="form-group">
+        <label id="secretQLabel">Secret Question</label>
+        <input type="text" id="secretAnswer" placeholder="Your answer">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="forgotStep2()">Verify →</button>
+    </div>
+    <div id="forgotStep3" style="display:none;">
+      <div class="form-group">
+        <label>New Password</label>
+        <input type="password" id="newPassReset" placeholder="Strong password" oninput="checkStrength(this,'resetStr','resetStrLabel')">
+        <div class="strength-meter"><div class="strength-bar" id="resetStr"></div></div>
+        <div class="strength-label" id="resetStrLabel"></div>
+      </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" id="confirmPassReset" placeholder="Repeat password">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doResetPassword()">Reset Password →</button>
+    </div>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="link-btn" onclick="showLogin()">← Back to Login</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== FIRST LOGIN SCREEN ===================== -->
+<div class="screen" id="firstLoginScreen" style="align-items:center;justify-content:center;background:radial-gradient(ellipse at 60% 30%,rgba(129,140,248,0.08) 0%,transparent 60%),var(--bg);">
+  <div style="width:520px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:48px;box-shadow:var(--shadow);animation:slideUp 0.5s ease;">
+    <div class="login-logo" style="color:var(--accent2);">Welcome!</div>
+    <div class="login-sub">// complete your profile to continue</div>
+    <div class="steps-bar">
+      <div class="step-dot active" id="sbar1"></div>
+      <div class="step-dot" id="sbar2"></div>
+      <div class="step-dot" id="sbar3"></div>
+    </div>
+    <div id="flAlert"></div>
+
+    <!-- Step 1: Personal Details -->
+    <div id="flStep1">
+      <div class="step-title">Personal Details</div>
+      <div style="color:var(--text-muted);font-size:0.82rem;margin-bottom:20px;">Tell us a bit about yourself</div>
+      <div class="form-grid">
+        <div class="form-group"><label>First Name</label><input type="text" id="flFirst" placeholder="John"></div>
+        <div class="form-group"><label>Last Name</label><input type="text" id="flLast" placeholder="Doe"></div>
+        <div class="form-group span2"><label>Email Address</label><input type="email" id="flEmail" placeholder="john@company.com"></div>
+        <div class="form-group"><label>Phone</label><input type="text" id="flPhone" placeholder="+1 000 000 0000"></div>
+        <div class="form-group"><label>Department</label><input type="text" id="flDept" placeholder="Engineering"></div>
+      </div>
+      <button class="btn btn-primary" onclick="flNext(1)">Next →</button>
+    </div>
+
+    <!-- Step 2: Secret Question -->
+    <div id="flStep2" style="display:none;">
+      <div class="step-title">Security Question</div>
+      <div style="color:var(--text-muted);font-size:0.82rem;margin-bottom:20px;">Used for password recovery</div>
+      <div class="form-group">
+        <label>Select a Secret Question</label>
+        <select id="flQuestion">
+          <option value="">— Choose a question —</option>
+          <option>What was the name of your first pet?</option>
+          <option>What city were you born in?</option>
+          <option>What is your mother's maiden name?</option>
+          <option>What was the name of your elementary school?</option>
+          <option>What is the name of the street you grew up on?</option>
+          <option>What was your childhood nickname?</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Your Answer</label>
+        <input type="text" id="flQAnswer" placeholder="Your answer (case-sensitive)">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-secondary" onclick="flBack(2)">← Back</button>
+        <button class="btn btn-primary" onclick="flNext(2)">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Change Password -->
+    <div id="flStep3" style="display:none;">
+      <div class="step-title">Set Your Password</div>
+      <div style="color:var(--text-muted);font-size:0.82rem;margin-bottom:20px;">Choose a strong, unique password</div>
+      <div class="form-group">
+        <label>New Password</label>
+        <input type="password" id="flNewPass" placeholder="Min 8 chars, upper+lower+number+symbol" oninput="checkStrength(this,'flStr','flStrLabel')">
+        <div class="strength-meter"><div class="strength-bar" id="flStr"></div></div>
+        <div class="strength-label" id="flStrLabel"></div>
+      </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" id="flConfirmPass" placeholder="Repeat password">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-secondary" onclick="flBack(3)">← Back</button>
+        <button class="btn btn-primary" onclick="flFinish()">Complete Setup ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MAIN APP ===================== -->
+<div class="screen" id="appScreen">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-brand">UserVault</div>
+    <div class="topbar-right">
+      <div class="user-badge">
+        <div class="avatar" id="topAvatar">A</div>
+        <span class="user-name-display" id="topName">Admin</span>
+        <span class="role-tag role-admin" id="topRole">admin</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+  <div class="app-body">
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Main</div>
+        <div class="nav-item active" onclick="showPage('dashboard',this)" data-perm="any">
+          <span class="nav-icon">◈</span> Dashboard
+        </div>
+      </div>
+      <div class="sidebar-section" id="adminNav">
+        <div class="sidebar-label">Administration</div>
+        <div class="nav-item" onclick="showPage('users',this)" data-perm="manage_users">
+          <span class="nav-icon">👥</span> Users
+        </div>
+        <div class="nav-item" onclick="showPage('roles',this)" data-perm="manage_roles">
+          <span class="nav-icon">🔐</span> Roles & Permissions
+        </div>
+        <div class="nav-item" onclick="showPage('profiles',this)" data-perm="manage_profiles">
+          <span class="nav-icon">🎨</span> Profiles & Themes
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Account</div>
+        <div class="nav-item" onclick="showPage('myaccount',this)" data-perm="any">
+          <span class="nav-icon">⚙</span> My Account
+        </div>
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div class="page-title">Dashboard</div>
+          <div class="page-desc">System overview and activity summary</div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-num" id="statUsers">0</div>
+            <div class="stat-label">Total Users</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🔐</div>
+            <div class="stat-num" id="statRoles">0</div>
+            <div class="stat-label">Active Roles</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-num" id="statActive">0</div>
+            <div class="stat-label">Active Users</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🚫</div>
+            <div class="stat-num" id="statInactive">0</div>
+            <div class="stat-label">Inactive Users</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Recent Users</div>
+          <div class="table-wrap">
+            <table id="dashRecentTable">
+              <thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Created</th></tr></thead>
+              <tbody id="dashRecentBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- USERS PAGE -->
+      <div class="page" id="page-users">
+        <div class="page-header">
+          <div class="page-title">User Management</div>
+          <div class="page-desc">Create, edit, and manage system users</div>
+        </div>
+        <div class="toolbar">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" placeholder="Search users..." oninput="filterUsers(this.value)" style="padding-left:36px;">
+          </div>
+          <select id="filterRole" onchange="filterUsers(document.querySelector('.search-input').value)" style="width:140px;">
+            <option value="">All Roles</option>
+          </select>
+          <select id="filterStatus" onchange="filterUsers(document.querySelector('.search-input').value)" style="width:140px;">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="openCreateUser()">+ New User</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Profile Theme</th><th>Actions</th></tr></thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ROLES PAGE -->
+      <div class="page" id="page-roles">
+        <div class="page-header">
+          <div class="page-title">Roles & Permissions</div>
+          <div class="page-desc">Define roles and assign permissions to control access</div>
+        </div>
+        <div class="toolbar">
+          <button class="btn btn-primary btn-sm" onclick="openCreateRole()">+ New Role</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Role Name</th><th>Permissions</th><th>Users</th><th>Actions</th></tr></thead>
+            <tbody id="rolesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PROFILES PAGE -->
+      <div class="page" id="page-profiles">
+        <div class="page-header">
+          <div class="page-title">Profiles & Themes</div>
+          <div class="page-desc">Customize GUI appearance per user profile</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Available Themes</div>
+          <div class="theme-grid">
+            <div class="theme-opt" onclick="applyTheme('default',this)">
+              <div class="theme-swatch" style="background:linear-gradient(135deg,#6ee7b7,#818cf8)"></div>
+              Default Emerald
+            </div>
+            <div class="theme-opt" onclick="applyTheme('ocean',this)">
+              <div class="theme-swatch" style="background:linear-gradient(135deg,#38bdf8,#6ee7b7)"></div>
+              Ocean Blue
+            </div>
+            <div class="theme-opt" onclick="applyTheme('fire',this)">
+              <div class="theme-swatch" style="background:linear-gradient(135deg,#fb923c,#f43f5e)"></div>
+              Fire Red
+            </div>
+            <div class="theme-opt" onclick="applyTheme('royal',this)">
+              <div class="theme-swatch" style="background:linear-gradient(135deg,#a78bfa,#ec4899)"></div>
+              Royal Purple
+            </div>
+            <div class="theme-opt" onclick="applyTheme('mono',this)">
+              <div class="theme-swatch" style="background:linear-gradient(135deg,#d1d5db,#6b7280)"></div>
+              Mono Silver
+            </div>
+          </div>
+        </div>
+        <div class="card" id="perUserThemeCard">
+          <div class="card-title">Assign Theme to User</div>
+          <div style="display:flex;gap:12px;align-items:flex-end;">
+            <div class="form-group" style="flex:1;margin-bottom:0;">
+              <label>Select User</label>
+              <select id="themeUserSel"></select>
+            </div>
+            <div class="form-group" style="flex:1;margin-bottom:0;">
+              <label>Select Theme</label>
+              <select id="themeValSel">
+                <option value="default">Default Emerald</option>
+                <option value="ocean">Ocean Blue</option>
+                <option value="fire">Fire Red</option>
+                <option value="royal">Royal Purple</option>
+                <option value="mono">Mono Silver</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="assignThemeToUser()">Assign</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MY ACCOUNT PAGE -->
+      <div class="page" id="page-myaccount">
+        <div class="page-header">
+          <div class="page-title">My Account</div>
+          <div class="page-desc">Update your personal information and password</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Personal Information</div>
+          <div class="form-grid">
+            <div class="form-group"><label>First Name</label><input type="text" id="myFirst"></div>
+            <div class="form-group"><label>Last Name</label><input type="text" id="myLast"></div>
+            <div class="form-group span2"><label>Email</label><input type="email" id="myEmail"></div>
+            <div class="form-group"><label>Phone</label><input type="text" id="myPhone"></div>
+            <div class="form-group"><label>Department</label><input type="text" id="myDept"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveMyProfile()">Save Changes</button>
+          <div id="profileSaveMsg"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Change Password</div>
+          <div class="form-group" style="max-width:320px;">
+            <label>Current Password</label>
+            <input type="password" id="curPass" placeholder="Current password">
+          </div>
+          <div class="form-group" style="max-width:320px;">
+            <label>New Password</label>
+            <input type="password" id="myNewPass" placeholder="Strong password" oninput="checkStrength(this,'myStr','myStrLabel')">
+            <div class="strength-meter"><div class="strength-bar" id="myStr"></div></div>
+            <div class="strength-label" id="myStrLabel"></div>
+          </div>
+          <div class="form-group" style="max-width:320px;">
+            <label>Confirm New Password</label>
+            <input type="password" id="myConfPass" placeholder="Repeat new password">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="changeMyPassword()">Update Password</button>
+          <div id="passSaveMsg"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">My Theme</div>
+          <div class="theme-grid">
+            <div class="theme-opt" onclick="applyMyTheme('default',this)"><div class="theme-swatch" style="background:linear-gradient(135deg,#6ee7b7,#818cf8)"></div>Default</div>
+            <div class="theme-opt" onclick="applyMyTheme('ocean',this)"><div class="theme-swatch" style="background:linear-gradient(135deg,#38bdf8,#6ee7b7)"></div>Ocean</div>
+            <div class="theme-opt" onclick="applyMyTheme('fire',this)"><div class="theme-swatch" style="background:linear-gradient(135deg,#fb923c,#f43f5e)"></div>Fire</div>
+            <div class="theme-opt" onclick="applyMyTheme('royal',this)"><div class="theme-swatch" style="background:linear-gradient(135deg,#a78bfa,#ec4899)"></div>Royal</div>
+            <div class="theme-opt" onclick="applyMyTheme('mono',this)"><div class="theme-swatch" style="background:linear-gradient(135deg,#d1d5db,#6b7280)"></div>Mono</div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ============ MODALS ============ -->
+
+<!-- Create/Edit User Modal -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <div class="modal-title" id="userModalTitle">Create New User</div>
+    <div class="modal-sub" id="userModalSub">Fill in the details below</div>
+    <div id="userModalAlert"></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Username *</label><input type="text" id="um_username" placeholder="jdoe"></div>
+      <div class="form-group"><label>Role *</label><select id="um_role"></select></div>
+      <div class="form-group"><label>First Name</label><input type="text" id="um_first" placeholder="John"></div>
+      <div class="form-group"><label>Last Name</label><input type="text" id="um_last" placeholder="Doe"></div>
+      <div class="form-group span2"><label>Email</label><input type="email" id="um_email" placeholder="john@company.com"></div>
+      <div class="form-group"><label>Password *</label><input type="password" id="um_pass" placeholder="Initial password" oninput="checkStrength(this,'umStr','umStrLabel')">
+        <div class="strength-meter"><div class="strength-bar" id="umStr"></div></div>
+        <div class="strength-label" id="umStrLabel"></div>
+      </div>
+      <div class="form-group"><label>Status</label><select id="um_status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+      <div class="form-group"><label>Profile Theme</label>
+        <select id="um_theme">
+          <option value="default">Default Emerald</option>
+          <option value="ocean">Ocean Blue</option>
+          <option value="fire">Fire Red</option>
+          <option value="royal">Royal Purple</option>
+          <option value="mono">Mono Silver</option>
+        </select>
+      </div>
+      <div class="form-group span2"><label>Department</label><input type="text" id="um_dept" placeholder="Engineering"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('userModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUser()" id="saveUserBtn">Create User</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal-overlay" id="resetPassModal">
+  <div class="modal">
+    <div class="modal-title">Reset Password</div>
+    <div class="modal-sub">Admin password reset for <b id="resetForUser"></b></div>
+    <div id="resetPassAlert"></div>
+    <div class="form-group">
+      <label>New Password</label>
+      <input type="password" id="rp_newPass" placeholder="Strong password" oninput="checkStrength(this,'rpStr','rpStrLabel')">
+      <div class="strength-meter"><div class="strength-bar" id="rpStr"></div></div>
+      <div class="strength-label" id="rpStrLabel"></div>
+    </div>
+    <div class="form-group">
+      <label>Confirm Password</label>
+      <input type="password" id="rp_confirm" placeholder="Repeat password">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('resetPassModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="doAdminReset()">Reset Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Role Modal -->
+<div class="modal-overlay" id="roleModal">
+  <div class="modal">
+    <div class="modal-title" id="roleModalTitle">Create Role</div>
+    <div class="modal-sub">Define role name and assign permissions</div>
+    <div id="roleModalAlert"></div>
+    <div class="form-group">
+      <label>Role Name *</label>
+      <input type="text" id="rm_name" placeholder="e.g. editor, viewer, manager">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <input type="text" id="rm_desc" placeholder="Brief description of this role">
+    </div>
+    <div>
+      <label style="display:block;font-size:0.78rem;color:var(--text-dim);margin-bottom:10px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;">Permissions</label>
+      <div class="perm-grid" id="permGrid"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('roleModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRole()" id="saveRoleBtn">Create Role</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="width:380px;">
+    <div class="modal-title" style="color:var(--danger);">⚠ Confirm Delete</div>
+    <div class="modal-sub" id="confirmMsg">Are you sure?</div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmAction()">Delete Permanently</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ======================= DATA STORE =======================
+let store = {
+  users: [
+    { id:1, username:'admin', password:'Admin@123', role:'admin', firstName:'System', lastName:'Administrator',
+      email:'admin@company.com', phone:'', dept:'IT', status:'active', theme:'default',
+      firstLogin:false, secretQ:'What city were you born in?', secretA:'system', created:'2024-01-01' }
+  ],
+  roles: [
+    { id:1, name:'admin', desc:'Full system access', perms:['manage_users','manage_roles','manage_profiles','view_reports','edit_content','delete_content','view_users'] },
+    { id:2, name:'manager', desc:'Manage users and view reports', perms:['manage_users','view_reports','view_users','edit_content'] },
+    { id:3, name:'editor', desc:'Edit content', perms:['edit_content','view_reports'] },
+    { id:4, name:'viewer', desc:'Read-only access', perms:['view_reports','view_users'] },
+  ],
+  nextUserId: 2,
+  nextRoleId: 5,
+};
+
+const ALL_PERMS = [
+  'manage_users','manage_roles','manage_profiles',
+  'view_reports','view_users','edit_content','delete_content'
+];
+
+let currentUser = null;
+let editingUserId = null;
+let editingRoleId = null;
+let pendingDeleteFn = null;
+let forgotUsername = null;
+let captchaCode = '';
+
+// ======================= CAPTCHA =======================
+function generateCaptcha() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  captchaCode = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+  document.getElementById('captchaDisplay').textContent = captchaCode;
+}
+
+// ======================= PASSWORD STRENGTH =======================
+function checkStrength(input, barId, labelId) {
+  const v = input.value;
+  let score = 0;
+  if (v.length >= 8) score++;
+  if (/[A-Z]/.test(v)) score++;
+  if (/[a-z]/.test(v)) score++;
+  if (/[0-9]/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+  const bar = document.getElementById(barId);
+  const lbl = document.getElementById(labelId);
+  const labels = ['','Very Weak','Weak','Fair','Strong','Very Strong'];
+  const colors = ['','#f87171','#fb923c','#fbbf24','#6ee7b7','#34d399'];
+  const widths = ['0%','20%','40%','60%','80%','100%'];
+  bar.style.width = widths[score];
+  bar.style.background = colors[score];
+  lbl.textContent = score > 0 ? labels[score] : '';
+  lbl.style.color = colors[score];
+}
+
+function isStrongPassword(p) {
+  return p.length >= 8 && /[A-Z]/.test(p) && /[a-z]/.test(p) && /[0-9]/.test(p) && /[^A-Za-z0-9]/.test(p);
+}
+
+// ======================= SCREEN SWITCHER =======================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ======================= LOGIN =======================
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const cap = document.getElementById('captchaInput').value.trim().toUpperCase();
+  const alert = document.getElementById('loginAlert');
+
+  if (!u || !p) { showAlert(alert,'error','Please enter username and password.'); return; }
+  if (cap !== captchaCode) {
+    showAlert(alert,'error','Captcha does not match. Please try again.');
+    generateCaptcha();
+    document.getElementById('captchaInput').value = '';
+    return;
+  }
+
+  const user = store.users.find(x => x.username === u && x.password === p && x.status === 'active');
+  if (!user) { showAlert(alert,'error','Invalid credentials or account inactive.'); generateCaptcha(); return; }
+
+  currentUser = user;
+  alert.innerHTML = '';
+  document.getElementById('captchaInput').value = '';
+
+  if (user.firstLogin) {
+    showScreen('firstLoginScreen');
+    return;
+  }
+  enterApp();
+}
+
+function enterApp() {
+  applyTheme(currentUser.theme || 'default');
+  updateTopBar();
+  renderDashboard();
+  renderUsersTable();
+  renderRolesTable();
+  populateThemeUserSel();
+  populateFilterRoles();
+  loadMyAccount();
+  applyRoleVisibility();
+  showScreen('appScreen');
+  showPage('dashboard');
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  generateCaptcha();
+  showAlert(document.getElementById('loginAlert'),'','');
+  showLogin();
+  showScreen('loginScreen');
+  // reset theme
+  document.body.className = '';
+}
+
+// ======================= FORGOT PASSWORD =======================
+function showForgotPassword() {
+  document.getElementById('loginBox').style.display = 'none';
+  document.getElementById('forgotBox').style.display = 'block';
+  document.getElementById('forgotAlert').innerHTML = '';
+  document.getElementById('forgotStep1').style.display = 'block';
+  document.getElementById('forgotStep2').style.display = 'none';
+  document.getElementById('forgotStep3').style.display = 'none';
+}
+function showLogin() {
+  document.getElementById('loginBox').style.display = 'block';
+  document.getElementById('forgotBox').style.display = 'none';
+}
+function forgotStep1() {
+  const u = document.getElementById('forgotUser').value.trim();
+  const alert = document.getElementById('forgotAlert');
+  const user = store.users.find(x => x.username === u);
+  if (!user) { showAlert(alert,'error','Username not found.'); return; }
+  forgotUsername = u;
+  document.getElementById('secretQLabel').textContent = user.secretQ || 'Secret Question';
+  document.getElementById('forgotStep1').style.display = 'none';
+  document.getElementById('forgotStep2').style.display = 'block';
+  alert.innerHTML = '';
+}
+function forgotStep2() {
+  const ans = document.getElementById('secretAnswer').value.trim();
+  const user = store.users.find(x => x.username === forgotUsername);
+  const alert = document.getElementById('forgotAlert');
+  if (!user || ans.toLowerCase() !== (user.secretA||'').toLowerCase()) {
+    showAlert(alert,'error','Incorrect answer.'); return;
+  }
+  document.getElementById('forgotStep2').style.display = 'none';
+  document.getElementById('forgotStep3').style.display = 'block';
+  alert.innerHTML = '';
+}
+function doResetPassword() {
+  const np = document.getElementById('newPassReset').value;
+  const cp = document.getElementById('confirmPassReset').value;
+  const alert = document.getElementById('forgotAlert');
+  if (!isStrongPassword(np)) { showAlert(alert,'error','Password must be strong (8+ chars, uppercase, lowercase, number, symbol).'); return; }
+  if (np !== cp) { showAlert(alert,'error','Passwords do not match.'); return; }
+  const user = store.users.find(x => x.username === forgotUsername);
+  user.password = np;
+  showAlert(alert,'success','Password reset successfully! Redirecting...');
+  setTimeout(() => { showLogin(); }, 1800);
+}
+
+// ======================= FIRST LOGIN =======================
+function flNext(step) {
+  const alert = document.getElementById('flAlert');
+  if (step === 1) {
+    const f = document.getElementById('flFirst').value.trim();
+    const l = document.getElementById('flLast').value.trim();
+    const e = document.getElementById('flEmail').value.trim();
+    if (!f || !l || !e) { showAlert(alert,'error','Please fill in all required fields.'); return; }
+    alert.innerHTML = '';
+    document.getElementById('flStep1').style.display = 'none';
+    document.getElementById('flStep2').style.display = 'block';
+    document.getElementById('sbar1').className = 'step-dot done';
+    document.getElementById('sbar2').className = 'step-dot active';
+  } else if (step === 2) {
+    const q = document.getElementById('flQuestion').value;
+    const a = document.getElementById('flQAnswer').value.trim();
+    if (!q || !a) { showAlert(alert,'error','Please select a question and provide an answer.'); return; }
+    alert.innerHTML = '';
+    document.getElementById('flStep2').style.display = 'none';
+    document.getElementById('flStep3').style.display = 'block';
+    document.getElementById('sbar2').className = 'step-dot done';
+    document.getElementById('sbar3').className = 'step-dot active';
+  }
+}
+function flBack(step) {
+  if (step === 2) {
+    document.getElementById('flStep2').style.display = 'none';
+    document.getElementById('flStep1').style.display = 'block';
+    document.getElementById('sbar1').className = 'step-dot active';
+    document.getElementById('sbar2').className = 'step-dot';
+  } else if (step === 3) {
+    document.getElementById('flStep3').style.display = 'none';
+    document.getElementById('flStep2').style.display = 'block';
+    document.getElementById('sbar2').className = 'step-dot active';
+    document.getElementById('sbar3').className = 'step-dot';
+  }
+}
+function flFinish() {
+  const np = document.getElementById('flNewPass').value;
+  const cp = document.getElementById('flConfirmPass').value;
+  const alert = document.getElementById('flAlert');
+  if (!isStrongPassword(np)) { showAlert(alert,'error','Password must be strong (8+ chars, uppercase, lowercase, number, symbol).'); return; }
+  if (np !== cp) { showAlert(alert,'error','Passwords do not match.'); return; }
+  // Save
+  currentUser.firstName = document.getElementById('flFirst').value.trim();
+  currentUser.lastName = document.getElementById('flLast').value.trim();
+  currentUser.email = document.getElementById('flEmail').value.trim();
+  currentUser.phone = document.getElementById('flPhone').value.trim();
+  currentUser.dept = document.getElementById('flDept').value.trim();
+  currentUser.secretQ = document.getElementById('flQuestion').value;
+  currentUser.secretA = document.getElementById('flQAnswer').value.trim();
+  currentUser.password = np;
+  currentUser.firstLogin = false;
+  enterApp();
+}
+
+// ======================= APP NAV =======================
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  if (el) el.classList.add('active');
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'users') renderUsersTable();
+  if (id === 'roles') renderRolesTable();
+  if (id === 'myaccount') loadMyAccount();
+  if (id === 'profiles') { populateThemeUserSel(); highlightCurrentTheme(); }
+}
+
+function applyRoleVisibility() {
+  const perms = getRolePerms(currentUser.role);
+  const hasAdmin = perms.includes('manage_users') || perms.includes('manage_roles');
+  document.getElementById('adminNav').style.display = hasAdmin ? 'block' : 'none';
+}
+
+function getRolePerms(roleName) {
+  const role = store.roles.find(r => r.name === roleName);
+  return role ? role.perms : [];
+}
+
+function hasPermission(perm) {
+  if (perm === 'any') return true;
+  return getRolePerms(currentUser.role).includes(perm);
+}
+
+// ======================= DASHBOARD =======================
+function renderDashboard() {
+  const active = store.users.filter(u => u.status === 'active').length;
+  const inactive = store.users.filter(u => u.status !== 'active').length;
+  document.getElementById('statUsers').textContent = store.users.length;
+  document.getElementById('statRoles').textContent = store.roles.length;
+  document.getElementById('statActive').textContent = active;
+  document.getElementById('statInactive').textContent = inactive;
+  const tbody = document.getElementById('dashRecentBody');
+  const recent = [...store.users].slice(-5).reverse();
+  tbody.innerHTML = recent.map(u => `
+    <tr>
+      <td><b>${u.firstName||''} ${u.lastName||''}</b><br><span style="color:var(--text-muted);font-size:0.77rem;font-family:'DM Mono',monospace;">@${u.username}</span></td>
+      <td>${roleBadge(u.role)}</td>
+      <td>${statusBadge(u.status)}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:0.8rem;color:var(--text-muted);">${u.created||'—'}</td>
+    </tr>`).join('');
+}
+
+// ======================= USERS TABLE =======================
+function renderUsersTable(filter='', roleF='', statusF='') {
+  const tbody = document.getElementById('usersTableBody');
+  let users = store.users;
+  const perms = getRolePerms(currentUser.role);
+  const canManage = perms.includes('manage_users');
+
+  if (filter) users = users.filter(u => (u.username+u.firstName+u.lastName+u.email).toLowerCase().includes(filter.toLowerCase()));
+  if (roleF) users = users.filter(u => u.role === roleF);
+  if (statusF) users = users.filter(u => u.status === statusF);
+
+  tbody.innerHTML = users.map(u => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="avatar" style="width:32px;height:32px;font-size:0.75rem;">${(u.firstName||u.username)[0].toUpperCase()}</div>
+          <div><div style="font-weight:500;">${u.firstName||''} ${u.lastName||''}</div>
+          <div style="font-size:0.77rem;color:var(--text-muted);font-family:'DM Mono',monospace;">@${u.username}</div></div>
+        </div>
+      </td>
+      <td style="color:var(--text-muted);font-size:0.82rem;">${u.email||'—'}</td>
+      <td>${roleBadge(u.role)}</td>
+      <td>${statusBadge(u.status)}</td>
+      <td style="font-size:0.78rem;color:var(--text-muted);">${u.theme||'default'}</td>
+      <td>
+        ${canManage ? `
+        <button class="btn btn-secondary btn-sm" onclick="openEditUser(${u.id})" style="margin-right:4px;">Edit</button>
+        <button class="btn btn-secondary btn-sm" onclick="openResetPass(${u.id})" style="margin-right:4px;">Reset PW</button>
+        <button class="btn btn-danger btn-sm" onclick="openDeleteUser(${u.id})">Delete</button>
+        ` : '<span style="color:var(--text-muted);font-size:0.8rem;">—</span>'}
+      </td>
+    </tr>`).join('');
+}
+
+function filterUsers(val) {
+  const roleF = document.getElementById('filterRole').value;
+  const statusF = document.getElementById('filterStatus').value;
+  renderUsersTable(val, roleF, statusF);
+}
+
+function populateFilterRoles() {
+  const sel = document.getElementById('filterRole');
+  sel.innerHTML = '<option value="">All Roles</option>' +
+    store.roles.map(r => `<option value="${r.name}">${r.name}</option>`).join('');
+}
+
+// ======================= CREATE/EDIT USER =======================
+function openCreateUser() {
+  editingUserId = null;
+  document.getElementById('userModalTitle').textContent = 'Create New User';
+  document.getElementById('userModalSub').textContent = 'Fill in the details below';
+  document.getElementById('saveUserBtn').textContent = 'Create User';
+  document.getElementById('userModalAlert').innerHTML = '';
+  ['um_username','um_first','um_last','um_email','um_dept'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('um_pass').value = '';
+  document.getElementById('um_status').value = 'active';
+  document.getElementById('um_theme').value = 'default';
+  document.getElementById('umStr').style.width = '0';
+  document.getElementById('umStrLabel').textContent = '';
+  populateRoleSelect('um_role');
+  openModal('userModal');
+}
+
+function openEditUser(id) {
+  editingUserId = id;
+  const u = store.users.find(x => x.id === id);
+  document.getElementById('userModalTitle').textContent = 'Edit User';
+  document.getElementById('userModalSub').textContent = `Editing @${u.username}`;
+  document.getElementById('saveUserBtn').textContent = 'Save Changes';
+  document.getElementById('userModalAlert').innerHTML = '';
+  document.getElementById('um_username').value = u.username;
+  document.getElementById('um_first').value = u.firstName||'';
+  document.getElementById('um_last').value = u.lastName||'';
+  document.getElementById('um_email').value = u.email||'';
+  document.getElementById('um_dept').value = u.dept||'';
+  document.getElementById('um_pass').value = '';
+  document.getElementById('um_status').value = u.status;
+  document.getElementById('um_theme').value = u.theme||'default';
+  populateRoleSelect('um_role', u.role);
+  openModal('userModal');
+}
+
+function saveUser() {
+  const uname = document.getElementById('um_username').value.trim();
+  const pass = document.getElementById('um_pass').value;
+  const role = document.getElementById('um_role').value;
+  const alert = document.getElementById('userModalAlert');
+
+  if (!uname || !role) { showAlert(alert,'error','Username and role are required.'); return; }
+
+  if (!editingUserId) {
+    // CREATE
+    if (!pass) { showAlert(alert,'error','Password is required for new users.'); return; }
+    if (!isStrongPassword(pass)) { showAlert(alert,'error','Password must be strong.'); return; }
+    if (store.users.find(u => u.username === uname)) { showAlert(alert,'error','Username already exists.'); return; }
+    const today = new Date().toISOString().split('T')[0];
+    store.users.push({
+      id: store.nextUserId++, username: uname, password: pass, role,
+      firstName: document.getElementById('um_first').value.trim(),
+      lastName: document.getElementById('um_last').value.trim(),
+      email: document.getElementById('um_email').value.trim(),
+      dept: document.getElementById('um_dept').value.trim(),
+      status: document.getElementById('um_status').value,
+      theme: document.getElementById('um_theme').value,
+      firstLogin: true, secretQ: '', secretA: '', created: today
+    });
+  } else {
+    // EDIT
+    const u = store.users.find(x => x.id === editingUserId);
+    if (uname !== u.username && store.users.find(x => x.username === uname && x.id !== editingUserId)) {
+      showAlert(alert,'error','Username already exists.'); return;
+    }
+    if (pass && !isStrongPassword(pass)) { showAlert(alert,'error','New password must be strong.'); return; }
+    u.username = uname;
+    u.role = role;
+    u.firstName = document.getElementById('um_first').value.trim();
+    u.lastName = document.getElementById('um_last').value.trim();
+    u.email = document.getElementById('um_email').value.trim();
+    u.dept = document.getElementById('um_dept').value.trim();
+    u.status = document.getElementById('um_status').value;
+    u.theme = document.getElementById('um_theme').value;
+    if (pass) u.password = pass;
+  }
+  closeModal('userModal');
+  renderUsersTable();
+  renderDashboard();
+  populateThemeUserSel();
+  populateFilterRoles();
+}
+
+// ======================= RESET PASSWORD (Admin) =======================
+let resetTargetId = null;
+function openResetPass(id) {
+  resetTargetId = id;
+  const u = store.users.find(x => x.id === id);
+  document.getElementById('resetForUser').textContent = u.username;
+  document.getElementById('resetPassAlert').innerHTML = '';
+  document.getElementById('rp_newPass').value = '';
+  document.getElementById('rp_confirm').value = '';
+  document.getElementById('rpStr').style.width = '0';
+  document.getElementById('rpStrLabel').textContent = '';
+  openModal('resetPassModal');
+}
+function doAdminReset() {
+  const np = document.getElementById('rp_newPass').value;
+  const cp = document.getElementById('rp_confirm').value;
+  const alert = document.getElementById('resetPassAlert');
+  if (!isStrongPassword(np)) { showAlert(alert,'error','Password must be strong.'); return; }
+  if (np !== cp) { showAlert(alert,'error','Passwords do not match.'); return; }
+  const u = store.users.find(x => x.id === resetTargetId);
+  u.password = np;
+  u.firstLogin = true; // force first login flow
+  showAlert(alert,'success','Password reset! User will be prompted to change on next login.');
+  setTimeout(() => closeModal('resetPassModal'), 1800);
+}
+
+// ======================= DELETE USER =======================
+function openDeleteUser(id) {
+  const u = store.users.find(x => x.id === id);
+  if (u.username === 'admin') { alert('Cannot delete the system admin.'); return; }
+  document.getElementById('confirmMsg').textContent = `Permanently delete user "@${u.username}"? This cannot be undone.`;
+  pendingDeleteFn = () => {
+    store.users = store.users.filter(x => x.id !== id);
+    renderUsersTable(); renderDashboard(); populateThemeUserSel();
+    closeModal('confirmModal');
+  };
+  openModal('confirmModal');
+}
+function confirmAction() { if (pendingDeleteFn) pendingDeleteFn(); }
+
+// ======================= ROLES =======================
+function renderRolesTable() {
+  const tbody = document.getElementById('rolesTableBody');
+  const perms = getRolePerms(currentUser.role);
+  const canManage = perms.includes('manage_roles');
+  tbody.innerHTML = store.roles.map(r => {
+    const userCount = store.users.filter(u => u.role === r.name).length;
+    return `<tr>
+      <td>
+        <div style="font-weight:600;">${r.name}</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);">${r.desc||''}</div>
+      </td>
+      <td style="max-width:300px;">
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+          ${r.perms.map(p => `<span style="font-size:0.7rem;background:rgba(129,140,248,0.1);color:var(--accent2);padding:2px 8px;border-radius:4px;font-family:'DM Mono',monospace;">${p}</span>`).join('')}
+        </div>
+      </td>
+      <td style="font-family:'DM Mono',monospace;">${userCount}</td>
+      <td>
+        ${canManage ? `
+        <button class="btn btn-secondary btn-sm" onclick="openEditRole(${r.id})" style="margin-right:4px;">Edit</button>
+        ${r.name !== 'admin' ? `<button class="btn btn-danger btn-sm" onclick="openDeleteRole(${r.id})">Delete</button>` : ''}
+        ` : '—'}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function buildPermGrid(selected=[]) {
+  return ALL_PERMS.map(p => `
+    <label class="perm-item">
+      <input type="checkbox" value="${p}" ${selected.includes(p)?'checked':''}>
+      <span>${p.replace(/_/g,' ')}</span>
+    </label>`).join('');
+}
+
+function openCreateRole() {
+  editingRoleId = null;
+  document.getElementById('roleModalTitle').textContent = 'Create Role';
+  document.getElementById('saveRoleBtn').textContent = 'Create Role';
+  document.getElementById('roleModalAlert').innerHTML = '';
+  document.getElementById('rm_name').value = '';
+  document.getElementById('rm_desc').value = '';
+  document.getElementById('permGrid').innerHTML = buildPermGrid();
+  openModal('roleModal');
+}
+function openEditRole(id) {
+  editingRoleId = id;
+  const r = store.roles.find(x => x.id === id);
+  document.getElementById('roleModalTitle').textContent = 'Edit Role';
+  document.getElementById('saveRoleBtn').textContent = 'Save Changes';
+  document.getElementById('roleModalAlert').innerHTML = '';
+  document.getElementById('rm_name').value = r.name;
+  document.getElementById('rm_desc').value = r.desc||'';
+  document.getElementById('permGrid').innerHTML = buildPermGrid(r.perms);
+  openModal('roleModal');
+}
+function saveRole() {
+  const name = document.getElementById('rm_name').value.trim().toLowerCase().replace(/\s+/g,'_');
+  const desc = document.getElementById('rm_desc').value.trim();
+  const perms = [...document.querySelectorAll('#permGrid input:checked')].map(c => c.value);
+  const alert = document.getElementById('roleModalAlert');
+  if (!name) { showAlert(alert,'error','Role name is required.'); return; }
+  if (!editingRoleId) {
+    if (store.roles.find(r => r.name === name)) { showAlert(alert,'error','Role name already exists.'); return; }
+    store.roles.push({ id: store.nextRoleId++, name, desc, perms });
+  } else {
+    const r = store.roles.find(x => x.id === editingRoleId);
+    r.name = name; r.desc = desc; r.perms = perms;
+  }
+  closeModal('roleModal');
+  renderRolesTable();
+  populateFilterRoles();
+}
+function openDeleteRole(id) {
+  const r = store.roles.find(x => x.id === id);
+  document.getElementById('confirmMsg').textContent = `Permanently delete role "${r.name}"?`;
+  pendingDeleteFn = () => {
+    store.roles = store.roles.filter(x => x.id !== id);
+    renderRolesTable(); populateFilterRoles();
+    closeModal('confirmModal');
+  };
+  openModal('confirmModal');
+}
+
+// ======================= THEMES =======================
+function applyTheme(theme, el) {
+  document.body.className = theme !== 'default' ? 'theme-' + theme : '';
+  if (el) {
+    document.querySelectorAll('.theme-opt').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+}
+function applyMyTheme(theme, el) {
+  applyTheme(theme, el);
+  if (currentUser) currentUser.theme = theme;
+}
+function highlightCurrentTheme() {
+  const theme = currentUser?.theme || 'default';
+  document.querySelectorAll('#page-profiles .theme-opt').forEach(o => o.classList.remove('selected'));
+  document.querySelectorAll('#page-myaccount .theme-opt').forEach(o => o.classList.remove('selected'));
+}
+function populateThemeUserSel() {
+  const sel = document.getElementById('themeUserSel');
+  if (!sel) return;
+  sel.innerHTML = store.users.map(u => `<option value="${u.id}">${u.username}</option>`).join('');
+}
+function assignThemeToUser() {
+  const uid = parseInt(document.getElementById('themeUserSel').value);
+  const theme = document.getElementById('themeValSel').value;
+  const u = store.users.find(x => x.id === uid);
+  if (u) { u.theme = theme; alert(`Theme "${theme}" assigned to @${u.username}`); }
+}
+
+// ======================= MY ACCOUNT =======================
+function loadMyAccount() {
+  if (!currentUser) return;
+  document.getElementById('myFirst').value = currentUser.firstName||'';
+  document.getElementById('myLast').value = currentUser.lastName||'';
+  document.getElementById('myEmail').value = currentUser.email||'';
+  document.getElementById('myPhone').value = currentUser.phone||'';
+  document.getElementById('myDept').value = currentUser.dept||'';
+}
+function saveMyProfile() {
+  currentUser.firstName = document.getElementById('myFirst').value.trim();
+  currentUser.lastName = document.getElementById('myLast').value.trim();
+  currentUser.email = document.getElementById('myEmail').value.trim();
+  currentUser.phone = document.getElementById('myPhone').value.trim();
+  currentUser.dept = document.getElementById('myDept').value.trim();
+  updateTopBar();
+  const msg = document.getElementById('profileSaveMsg');
+  msg.innerHTML = '<div class="alert alert-success" style="margin-top:10px;">Profile updated successfully!</div>';
+  setTimeout(() => msg.innerHTML = '', 2500);
+}
+function changeMyPassword() {
+  const cur = document.getElementById('curPass').value;
+  const np = document.getElementById('myNewPass').value;
+  const cp = document.getElementById('myConfPass').value;
+  const msg = document.getElementById('passSaveMsg');
+  if (cur !== currentUser.password) { msg.innerHTML = '<div class="alert alert-error" style="margin-top:10px;">Current password is incorrect.</div>'; return; }
+  if (!isStrongPassword(np)) { msg.innerHTML = '<div class="alert alert-error" style="margin-top:10px;">New password must be strong.</div>'; return; }
+  if (np !== cp) { msg.innerHTML = '<div class="alert alert-error" style="margin-top:10px;">Passwords do not match.</div>'; return; }
+  currentUser.password = np;
+  document.getElementById('curPass').value = '';
+  document.getElementById('myNewPass').value = '';
+  document.getElementById('myConfPass').value = '';
+  document.getElementById('myStr').style.width = '0';
+  msg.innerHTML = '<div class="alert alert-success" style="margin-top:10px;">Password changed successfully!</div>';
+  setTimeout(() => msg.innerHTML = '', 2500);
+}
+
+// ======================= HELPERS =======================
+function updateTopBar() {
+  const u = currentUser;
+  if (!u) return;
+  document.getElementById('topAvatar').textContent = (u.firstName||u.username)[0].toUpperCase();
+  document.getElementById('topName').textContent = u.firstName ? `${u.firstName} ${u.lastName||''}`.trim() : u.username;
+  const roleTag = document.getElementById('topRole');
+  roleTag.textContent = u.role;
+  roleTag.className = 'role-tag role-' + u.role;
+}
+
+function populateRoleSelect(selId, selected='') {
+  const sel = document.getElementById(selId);
+  sel.innerHTML = store.roles.map(r => `<option value="${r.name}" ${r.name===selected?'selected':''}>${r.name}</option>`).join('');
+}
+
+function roleBadge(role) {
+  const map = { admin:'role-admin', manager:'role-manager', viewer:'role-viewer', editor:'role-editor' };
+  return `<span class="role-tag ${map[role]||'role-viewer'}">${role}</span>`;
+}
+function statusBadge(status) {
+  const map = { active:'status-active', inactive:'status-inactive', pending:'status-pending' };
+  return `<span class="status-badge ${map[status]||'status-pending'}">${status}</span>`;
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function showAlert(el, type, msg) {
+  if (!msg) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// Keyboard enter on login
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginScreen').classList.contains('active')) doLogin();
+});
+
+// ======================= INIT =======================
+generateCaptcha();
+</script>
+</body>
+</html>
